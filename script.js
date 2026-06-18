@@ -46,6 +46,7 @@
     oldPassword: document.getElementById("oldPassword"),
     newPassword: document.getElementById("newPassword"),
     passwordError: document.getElementById("passwordError"),
+    resetVotesBtn: document.getElementById("resetVotesBtn"),
     adminFoodList: document.getElementById("adminFoodList"),
     toastArea: document.getElementById("toastArea"),
     spinnerOverlay: document.getElementById("spinnerOverlay")
@@ -54,6 +55,7 @@
   document.addEventListener("DOMContentLoaded", init);
 
   function init() {
+    normalizeStoredState();
     attachEvents();
     hydrateDeadlineInputs();
     renderAll();
@@ -76,6 +78,7 @@
     elements.addFoodForm.addEventListener("submit", handleAddFood);
     elements.deadlineForm.addEventListener("submit", handleDeadline);
     elements.passwordForm.addEventListener("submit", handlePasswordChange);
+    elements.resetVotesBtn.addEventListener("click", handleResetVotes);
 
     elements.foodGrid.addEventListener("click", (event) => {
       const button = event.target.closest("[data-vote-id]");
@@ -98,6 +101,23 @@
 
   function saveFoods() {
     localStorage.setItem(STORAGE_KEYS.foods, JSON.stringify(foods));
+  }
+
+  function normalizeStoredState() {
+    if (!Array.isArray(foods)) foods = [];
+    foods = foods.map((food) => ({
+      id: food.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      name: String(food.name || "").trim(),
+      image: String(food.image || "").trim(),
+      votes: Number.isFinite(Number(food.votes)) ? Number(food.votes) : 0
+    })).filter((food) => food.name && food.image);
+
+    if (!foods.length && hasVoted) {
+      hasVoted = false;
+      localStorage.removeItem(STORAGE_KEYS.voted);
+    }
+
+    saveFoods();
   }
 
   function renderAll() {
@@ -185,7 +205,8 @@
   }
 
   function animateVote(id) {
-    const card = elements.foodGrid.querySelector(`[data-card-id="${CSS.escape(id)}"]`);
+    const card = Array.from(elements.foodGrid.querySelectorAll("[data-card-id]"))
+      .find((item) => item.dataset.cardId === id);
     if (!card) return;
 
     card.classList.add("pop");
@@ -278,17 +299,22 @@
     }
 
     if (!image) {
-      elements.addFoodError.textContent = "សូមបញ្ចូល URL រូបភាព";
+      elements.addFoodError.textContent = "សូមបញ្ចូលតំណរូបភាព";
       return;
     }
 
     if (!isValidUrl(image)) {
-      elements.addFoodError.textContent = "សូមបញ្ចូល URL រូបភាពឱ្យត្រឹមត្រូវ";
+      elements.addFoodError.textContent = "សូមបញ្ចូលតំណរូបភាពឱ្យត្រឹមត្រូវ";
       return;
     }
 
+    if (!foods.length) {
+      hasVoted = false;
+      localStorage.removeItem(STORAGE_KEYS.voted);
+    }
+
     foods.push({
-      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      id: window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
       name,
       image,
       votes: 0
@@ -322,6 +348,10 @@
         </article>
       `;
     }).join("");
+
+    elements.adminFoodList.querySelectorAll(".ripple").forEach((button) => {
+      button.addEventListener("click", createRipple);
+    });
   }
 
   function renderAdminActions(food) {
@@ -341,7 +371,7 @@
           <input name="name" type="text" value="${escapeHTML(food.name)}">
         </label>
         <label>
-          <span>URL រូបភាព</span>
+          <span>តំណរូបភាព</span>
           <input name="image" type="url" value="${escapeHTML(food.image)}">
         </label>
         <div class="admin-actions">
@@ -373,6 +403,10 @@
       const id = deleteButton.dataset.deleteId;
       if (!confirm("តើអ្នកពិតជាចង់លុបមែនទេ?")) return;
       foods = foods.filter((food) => food.id !== id);
+      if (!foods.length) {
+        hasVoted = false;
+        localStorage.removeItem(STORAGE_KEYS.voted);
+      }
       if (editingId === id) editingId = null;
       saveFoods();
       renderAll();
@@ -398,7 +432,7 @@
     }
 
     if (!image || !isValidUrl(image)) {
-      showToast("សូមបញ្ចូល URL រូបភាពឱ្យត្រឹមត្រូវ", "error");
+      showToast("សូមបញ្ចូលតំណរូបភាពឱ្យត្រឹមត្រូវ", "error");
       return;
     }
 
@@ -424,7 +458,7 @@
     localStorage.setItem(STORAGE_KEYS.deadline, deadline);
     updateCountdown();
     renderFoods();
-    showToast("បានរក្សាទុក Deadline ✅", "success");
+    showToast("បានរក្សាទុកពេលបញ្ចប់ ✅", "success");
   }
 
   function hydrateDeadlineInputs() {
@@ -451,7 +485,7 @@
 
     const remaining = target - Date.now();
     const readableDeadline = formatDateTime(deadline);
-    elements.currentDeadline.textContent = `Deadline បច្ចុប្បន្ន៖ ${readableDeadline}`;
+    elements.currentDeadline.textContent = `ពេលបញ្ចប់បច្ចុប្បន្ន៖ ${readableDeadline}`;
 
     if (remaining <= 0) {
       elements.countdownText.textContent = "ការបោះឆ្នោតត្រូវបានបិទ";
@@ -490,6 +524,20 @@
     localStorage.setItem(STORAGE_KEYS.password, password);
     elements.passwordForm.reset();
     showToast("បានប្តូរពាក្យសម្ងាត់ ✅", "success");
+  }
+
+  function handleResetVotes() {
+    if (!confirm("តើអ្នកពិតជាចង់សម្អាតសន្លឹកឆ្នោតទាំងអស់មែនទេ?")) return;
+
+    foods = foods.map((food) => ({
+      ...food,
+      votes: 0
+    }));
+    hasVoted = false;
+    localStorage.removeItem(STORAGE_KEYS.voted);
+    saveFoods();
+    renderAll();
+    showToast("បានសម្អាតសន្លឹកឆ្នោត ✅", "success");
   }
 
   function showToast(message, type) {
