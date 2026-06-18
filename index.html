@@ -48,7 +48,7 @@
       <section class="section fade-in" id="dashboardSection">
         <div class="section-heading">
           <div>
-            <p class="section-kicker">Dashboard</p>
+            <p class="section-kicker">ផ្ទាំងស្ថិតិ</p>
             <h2>ស្ថិតិបោះឆ្នោត</h2>
           </div>
         </div>
@@ -102,7 +102,7 @@
               <input id="foodNameInput" type="text" autocomplete="off" placeholder="បញ្ចូលឈ្មោះមុខម្ហូប">
             </label>
             <label>
-              <span>URL រូបភាព</span>
+              <span>តំណរូបភាព</span>
               <input id="foodImageInput" type="url" autocomplete="off" placeholder="https://...">
             </label>
             <p class="form-error" id="addFoodError"></p>
@@ -110,7 +110,7 @@
           </form>
 
           <form class="control-card" id="deadlineForm">
-            <h3>Deadline</h3>
+            <h3>ពេលបញ្ចប់</h3>
             <label>
               <span>ថ្ងៃខែ</span>
               <input id="deadlineDate" type="date">
@@ -120,7 +120,7 @@
               <input id="deadlineTime" type="time">
             </label>
             <p class="current-deadline" id="currentDeadline">បច្ចុប្បន្នមិនទាន់កំណត់ពេលបញ្ចប់</p>
-            <button class="primary-button ripple" type="submit">រក្សាទុក Deadline</button>
+            <button class="primary-button ripple" type="submit">រក្សាទុកពេលបញ្ចប់</button>
           </form>
 
           <form class="control-card" id="passwordForm">
@@ -136,6 +136,12 @@
             <p class="form-error" id="passwordError"></p>
             <button class="primary-button ripple" type="submit">រក្សាទុក</button>
           </form>
+
+          <div class="control-card">
+            <h3>ចាប់ផ្តើមថ្មី</h3>
+            <p class="current-deadline">សម្អាតសន្លឹកឆ្នោតទាំងអស់ ហើយអនុញ្ញាតឱ្យ browser នេះបោះឆ្នោតម្ដងទៀត</p>
+            <button class="danger-button ripple" id="resetVotesBtn" type="button">សម្អាតសន្លឹកឆ្នោត</button>
+          </div>
         </div>
 
         <div class="admin-foods">
